@@ -2,7 +2,7 @@ var SerialPort = require('serialport')
 var utils = require('./functions')
 
 var baudRate = process.argv[3] || 9600
-var portName = process.argv[2] || 'com3'
+var portName = process.argv[2] || '/dev/ttyACM0'
 
 var port = new SerialPort(portName, {
   baudRate : baudRate,
