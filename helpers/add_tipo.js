@@ -5,8 +5,8 @@ var request = require('request');
 
     var payload ={
 
-            nombre:'Juan',
-            codigo: 987654321
+            nombre:'Gamma',
+            voltaje: 48
             }
 
 
@@ -14,7 +14,7 @@ var request = require('request');
    console.log('---------------------')
     //var request = require('request');
 
-    request.post('http://localhost:4000/cargador/usuario',
+    request.post('http://localhost:4000/cargador/tipo',
     {
       json:true,
       body:payload
