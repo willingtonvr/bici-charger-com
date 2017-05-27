@@ -40,11 +40,8 @@ function procesData(data){
         dv.setUint8(2,b1)
         dv.setUint8(3,b0)
         var floatView = dv.getFloat32(0)
-        var parsed_data = {
-          sensor : tipo_sens,
-          value : floatView
-        }
-        this.emit('frame-parsed',parsed_data)
+        tipo_sens.valor = floatView
+        this.emit('frame-parsed',tipo_sens)
       }
     else{
       this.emit('frame-error', {

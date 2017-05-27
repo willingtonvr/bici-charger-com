@@ -7,5 +7,5 @@ config.camera = process.env.CAMERA || '/dev/video0'
 config.baudRate = process.env.CAMERA || 9600
 config.SerialPort = process.env.CAMERA || '/dev/ttyACM0'
 config.queueInterval = process.env.QUEUE_INTERVAL || 500
-
+config.hardwareName =process.env.HARWARE_NAME || 'Arduino01'
 module.exports = config

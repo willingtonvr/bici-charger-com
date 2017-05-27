@@ -5,7 +5,7 @@ var request = require('request');
 
     var payload ={
 
-    nombre:'Arduino03',
+    nombre:'Arduino02',
     device_address : {
       msb: 41,
       lsb:42

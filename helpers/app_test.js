@@ -1,4 +1,4 @@
-var hardware = require('./hardware-driver/arduino')
+var hardware = require('../hardware-driver/arduino')
 
 device = {
   msb : 0x41,
@@ -20,6 +20,6 @@ hardware.on('frame-parsed', function(data){
   console.log(data)
 })
 
-setTimeout(hardware.sendData(device, operation, 0x00, color), 30000);
+//setTimeout(hardware.sendData(device, operation, 0x00, color), 30000);
 
-console.log('Magic happends')
+console.log('Magic happens')
