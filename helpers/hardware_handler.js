@@ -7,15 +7,15 @@ var exports = module.exports = {};
 
 exports.upload = function(data,callback){
     var current = {status:'no ejecutado'}
-    console.log(data)
+    //console.log(data)
     request.put(url+'/'+data.nombre,
     {
       json:true,
       body:data
     },
     function(error, response,body){
-      console.log('puttin response');
-      console.log(body);
+      //console.log('puttin response');
+      //console.log(body);
       //var resp =JSON.parse(body)
       var resp = body
       if (error) { console.log('erorr' + error)}
@@ -31,3 +31,25 @@ exports.upload = function(data,callback){
     });
 
   }
+exports.status = function(data,callback){
+      var current = {status:'no ejecutado'}
+      //console.log(data)
+      request.get(url+'/'+data.nombre,
+      function(error, response,body){
+        //console.log('gettin staus');
+        //console.log(body);
+        var resp =JSON.parse(body)
+        //var resp = body
+        if (error) { console.log('erorr' + error)}
+        if (resp.status==='success'){
+
+            current = {status:'success', payload: resp.payload }
+        }
+        else {
+            current = {status:'no existe el dispositivo', payload: resp.payload}
+        }
+        callback(current)
+
+      });
+
+    }

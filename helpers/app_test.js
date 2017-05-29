@@ -13,7 +13,7 @@ operation = {
 color = {
   r : 255,
   g : 0,
-  b : 2500
+  b : 250
 }
 
 hardware.on('frame-parsed', function(data){

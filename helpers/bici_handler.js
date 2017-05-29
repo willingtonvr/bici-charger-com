@@ -2,7 +2,7 @@
 
 var request = require('request');
 var config = require('../config')
-var url = config.server+':'+ config.port +'/cargador/usuario'
+var url = config.server+':'+ config.port +'/cargador/bicicletas'
 
 var exports = module.exports = {};
 
@@ -11,16 +11,11 @@ exports.check = function(data,callback){
     request.get(url+'/'+data.codigo,
       function(error, response,body){
       var resp =JSON.parse(body)
-      //console.log(body);
-
-      if (error) {
-        console.log('---- ERROR -----'); 
-        console.log(error)
-      }
+      if (error) { console.log(error)}
 
       if (resp.status==='success'){
             // ok el usuario existe "status":"success"
-          current = body
+          current = {status:'existe', payload: data }
       }
       else {
           current = {status:'no existe',payload: data}
