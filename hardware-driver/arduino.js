@@ -9,10 +9,11 @@ var port = new SerialPort(portName, {
   baudRate : baudRate,
   parser : SerialPort.parsers.byteDelimiter([0x7D])
 });
-
+port.bootWait = true
 port.on('open', function(){
   console.log('port ' + portName + ' open');
   console.log('baud rate: ' + port.options.baudRate);
+  setTimeout(flagBoot,config.bootWait) // esperamos a que el hardware este listo
 });
 
 port.on('data', procesData);
@@ -20,7 +21,7 @@ port.on('data', procesData);
 port.sendData = function (device_address, operation, led, color) {
   if(this.isOpen()){
     var buffer = utils.getPackColor(device_address.msb, device_address.lsb, operation.type, operation.number, led, color.r, color.g , color.b)
-    this.write(buffer)
+    if (!port.bootWait) this.write(buffer)
   }
 }
 
@@ -41,19 +42,23 @@ function procesData(data){
         dv.setUint8(3,b0)
         var floatView = dv.getFloat32(0)
         tipo_sens.valor = floatView
-        this.emit('frame-parsed',tipo_sens)
+        if (!port.bootWait) this.emit('frame-parsed',tipo_sens)
       }
     else{
-      this.emit('frame-error', {
+      if (!port.bootWait) this.emit('frame-error', {
         error : 'badchecksum'
       })
     }
   }
   else {
-    this.emit('frame-error', {
+    if (!port.bootWait) this.emit('frame-error', {
       error : 'bad length'
     })
   }
+}
+function flagBoot(){
+  port.bootWait = false
+  console.log('Hardware Ready');
 }
 
 module.exports = port

@@ -12,6 +12,8 @@ var q_proc = []  // usuarios a procesar aqui el usuarui es valido
 var q_hwr_in = []  // comandos de llegada hardware
 var q_hwr_out = []  // comandos de llegada hardware
 var hwr_status ={}
+var prev_state ={}
+
 
 var base_hardware =
 {
@@ -23,8 +25,9 @@ var base_hardware =
   n_slots: 3
 }
 // mas del estilo C/C++
+
 setInterval(main, config.queueInterval);
-setInterval(readHardware,3000)
+setInterval(readHardwareFromServer,5000)
 
 console.log('iniciando z bar');
 zbar = new Zbar(config.camera);
@@ -105,7 +108,7 @@ function main() {
             msb: 0x41,
             lsb: 0x42
           },
-          n_slots: 3
+          n_slots: 4
         }
 
         switch (datahwd.tipo) {
@@ -130,21 +133,18 @@ function main() {
         hardware_helper.upload(data,hardware_callback)
 
     }
-    if(q_hwr_out.length > 0) {
+    if (q_hwr_out.length > 0) {
       // envaimos los comandos
       var cmd = q_hwr_out.shift()
-      console.log('--- comando -----');
-      console.log(cmd);
+      //onsole.log('--- comando -----');
+      //console.log(cmd);
       hardware.sendData(cmd.device, cmd.operation, cmd.output, cmd.color)
-
-
     }
-  //hardware_helper.status(base_hardware,hardware_status_cb)
+
 }
-// esta funcion se encarda de derivar
-// la cola si existe o no
+
 function user_callback(estado){
-  //console.log(estado);
+
   if (estado.status==='no existe'){
     //console.log('AGREGAR : ');
     q_add.push(estado)
@@ -152,79 +152,63 @@ function user_callback(estado){
     //console.log('procesar : ');
     q_proc.push(estado)
   }
-
-
 }
 
 function hardware_callback(estado){
-  // if (estado.status!='updated'){
-      //console.log('respuesta server');
-      //console.log(estado);
-  //}
     hardware_helper.status(base_hardware, hardware_status_cb)
+}
+function readHardwareFromServer(){
+  hardware_helper.status(base_hardware, hardware_status_cb)
 }
 function hardware_status_cb(estado){
 
   hwr_status = estado.payload[0]
-  //console.log('--- estado payload ---');
-  //console.log(estado);
-  //console.log('--- estado hardware ---');
-  //console.log(hwr_status);
-  console.log('----- hardware staus -----');
-  //console.log(hwr_status);
-  //console.log(hwr_status.slot);
-  console.log('----- key ------');
-  for(var i in hwr_status.slot ){
-
-    console.log('slot ' + i + ' ' + hwr_status.slot[i].estado);
-    if (hwr_status.slot[i].estado ==='on'){
-
-      var command = {
-
-          device : {
-            msb : 0x41,
-            lsb : 0x42
-          },
-          operation : {
-            type : 0x53,
-            // debemos traer el slot libre del
-            // servidor
-            number : 0xA9
-          },
-          color : {
-            r : 0,
-            g : 200,
-            b : 0
-          },
-          output : i
-        }
-      q_hwr_out.push(command)
-    } else {
-      var command = {
-
-          device : {
-            msb : 0x41,
-            lsb : 0x42
-          },
-          operation : {
-            type : 0x53,
-            // debemos traer el slot libre del
-            // servidor
-            number : 0xA9
-          },
-          color : {
-            r : 100,
-            g : 0,
-            b : 0
-          },
-          output : i
-        }
-      q_hwr_out.push(command)
+  if (hardware.bootWait) return;
+  if (typeof prev_state.slot =='undefined' ){
+    prev_state.slot = hwr_status.slot
+    for(var i in hwr_status.slot ){
+      if (hwr_status.slot[i].estado ==='on'){
+        prev_state.slot[i].estado ='off'
+      } else {
+        prev_state.slot[i].estado ='on'
+      }
     }
   }
-  console.log('activar '+ i );
+  var cmd = {
+    device : {
+        msb : 0x41,
+        lsb : 0x42
+      },
+    operation : {
+        type : 0x53,
+        number : 0xAC
+      },
+    color : {
+        r : 0,
+        g : 200,
+        b : 0
+      },
+      output : 0
+    }
+  //console.log('----- slot status------');
+  for(var i in hwr_status.slot ){
 
-}
-function readHardware(){
-  hardware_helper.status(base_hardware, hardware_status_cb)
+
+    if (hwr_status.slot[i].estado ==='on'){
+      cmd.color.r =0
+      cmd.color.g =150
+      cmd.color.b =0
+
+    } else {
+      cmd.color.r =150
+      cmd.color.g =0
+      cmd.color.b =0
+    }
+    cmd.output = i
+    if (hwr_status.slot[i].estado != prev_state.slot[i].estado){
+      console.log('slot ' + i + ' SVR: ' + hwr_status.slot[i].estado + ' HWR: ' + prev_state.slot[i].estado)
+      hardware.sendData(cmd.device, cmd.operation, cmd.output, cmd.color)
+      prev_state.slot[i].estado=hwr_status.slot[i].estado
+    }
+  }
 }
