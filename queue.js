@@ -86,7 +86,7 @@ function main() {
             msb: 0x41,
             lsb: 0x42
           },
-          n_slots: 3
+          n_slots: 4
         }
 
         data.slot =[ {numero: parseInt(output) +1 ,estado: 'on'} ]
