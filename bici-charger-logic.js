@@ -1,4 +1,6 @@
-// lo mismo que app pero con colas
+// lo mismo que app pero con eventos
+var inherits = require('util').inherits;
+var EventEmitter = require('events').EventEmitter;
 var Zbar = require('zbar')
 var request = require('request')
 var user_helper = require('./helpers/user_handler')
@@ -13,50 +15,70 @@ var q_hwr_in = []  // comandos de llegada hardware
 var q_hwr_out = []  // comandos de llegada hardware
 var hwr_status ={}
 var prev_state ={}
-var exports = module.exports = {};
 
-exports.base_hardware =
-{
-  nombre:'Arduino01',
-  device_address : {
-    msb: 0x41,
-    lsb: 0x42
-  },
-  n_slots: 4
+module.exports = bLogic;
+function bLogic() {
+  if (! (this instanceof bLogic)) return new bLogic();
+  this._started = false;
+  EventEmitter.call(this);
 }
 
-exports.InitZbar = function() {
-  console.log('iniciando z bar');
-  zbar = new Zbar(config.camera);
-  zbar.stdout.on('data', function(buf) {
+
+inherits(bLogic, EventEmitter);
+
+bLogic.prototype.start = function start() {
+  var self = this
+  self.zbar ={}
+  self.zbar.parent = this
+  console.log('started');
+  if (self._started) return
+  self._started = Date.now()
+  self.InitZbar()
+  self.InitHardware()
+  self.base_hardware =
+  {
+    nombre:'Arduino01',
+    device_address : {
+      msb: 0x41,
+      lsb: 0x42
+    },
+    n_slots: 4
+  }
+
+};
+
+bLogic.prototype.InitZbar = function InitZbar() {
+    console.log('iniciando Z bar');
+
+    this.zbar = new Zbar(config.camera);
+    this.zbar.stdout.parent = this
+
+    this.zbar.stdout.on('data', function(buf) {
     console.log('Request by QR code: ' + buf.toString())
+    var bl = this.parent
     var data = buf.toString().slice(0,-1).split('-')
     var qdata={
       codigo: data[0],
       bicicleta: data[1]
     }
-    proc_zbardata(qdata)
-
+    user_helper.check(qdata,function(estado){
+      if (estado.status==='no existe'){
+        bl.emit('usuario-novalido',estado)
+      } else {
+        bl.emit('usuario-valido',estado)
+      }
+    })
   })
 }
 
-function proc_zbardata(data){
-    user_helper.check(data,function(estado){
 
-    if (estado.status==='no existe'){
-      this.emit('usuario-novalido',estado)
-    } else {
-      this.emit('usuario-valido',estado)
-    }
-  })
-}
-
-exports.InitHardware = function (){
+bLogic.prototype.InitHardware = function InitHardware(){
   var hardware = require('./hardware-driver/arduino')
   exports.hardware = hardware
+  hardware.parent = this
   hardware.on('frame-parsed', function(datahwd){
-
-  var data = base_hardware
+  // copia los datos base
+  var data = JSON.parse(JSON.stringify( this.parent.base_hardware))
 
   switch (datahwd.tipo) {
     case 'voltaje':
@@ -77,15 +99,16 @@ exports.InitHardware = function (){
     */
   }
 
-  //hardware_helper.upload(data,hardware_callback)
-
-  this.emit('hardware-input',data)
+  hardware_helper.upload(data,function(status){
+    this.parent.emit('hardware-uploaded',data)
+  
+    })
 
   })
 }
 
 //fucking callback hell !
-expots.main  = function () {
+bLogic.prototype.main  = function main () {
 
 
   if (q_proc.length > 0) {

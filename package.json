@@ -1,11 +1,12 @@
 {
   "name": "bici-charger-com",
   "version": "1.0.0",
-  "description": "",
+  "description": "Cliente/hardware Controller",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },"repository": {
+  },
+  "repository": {
     "type": "git",
     "url": "git+https://github.com/willingtonvr/carga-bici.git"
   },
@@ -14,6 +15,7 @@
   "dependencies": {
     "request": "^2.81.0",
     "serialport": "^4.0.7",
+    "ws": "^3.0.0",
     "zbar": "0.0.4"
   }
 }
