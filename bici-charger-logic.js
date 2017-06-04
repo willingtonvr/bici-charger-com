@@ -7,16 +7,18 @@ var user_helper = require('./helpers/user_handler')
 var hardware_helper = require('./helpers/hardware_handler')
 var config = require('./config')
 
-
-var q_inp = []  // datos que llegan por zbar
-var q_add = []  // usuarios a agrear
-var q_proc = []  // usuarios a procesar aqui el usuarui es valido
-var q_hwr_in = []  // comandos de llegada hardware
-var q_hwr_out = []  // comandos de llegada hardware
 var hwr_status ={}
 var prev_state ={}
+var base_hardware =
+{
+  nombre:'Arduino01',
+  device_address : {
+    msb: 0x41,
+    lsb: 0x42
+  },
+  n_slots: 4
+}
 
-module.exports = bLogic;
 function bLogic() {
   if (! (this instanceof bLogic)) return new bLogic();
   this._started = false;
@@ -78,89 +80,131 @@ bLogic.prototype.InitHardware = function InitHardware(){
   hardware.parent = this
   hardware.on('frame-parsed', function(datahwd){
   // copia los datos base
-  var data = JSON.parse(JSON.stringify( this.parent.base_hardware))
+      var data = JSON.parse(JSON.stringify( this.parent.base_hardware))
 
-  switch (datahwd.tipo) {
-    case 'voltaje':
-    data.voltaje =  {numero: datahwd.slot , valor: datahwd.valor }
-    break;
-    case 'corriente':
+      switch (datahwd.tipo) {
+        case 'voltaje':
+        data.voltaje =  {numero: datahwd.slot , valor: datahwd.valor }
+        break;
+        case 'corriente':
 
-    data.corriente =  {numero: datahwd.slot , valor: datahwd.valor }
-    break;
-    case 'temperatura':
+        data.corriente =  {numero: datahwd.slot , valor: datahwd.valor }
+        break;
+        case 'temperatura':
 
-    data.temperatura =  {numero: datahwd.slot , valor: datahwd.valor }
-    break;
-    /*
-    case 'led':
-    data.led =  {numero: datahwd.slot , valor: data.valor }
-    break;
-    */
-  }
+        data.temperatura =  {numero: datahwd.slot , valor: datahwd.valor }
+        break;
+        /*
+        case 'led':
+        data.led =  {numero: datahwd.slot , valor: data.valor }
+        break;
+        */
+      }
 
-  hardware_helper.upload(data,function(status){
-    this.parent.emit('hardware-uploaded',data)
-  
+    hardware_helper.upload(data,function(status){
+    hardware.parent.emit('hardware-uploaded',status)
+
     })
 
   })
 }
+bLogic.prototype.buscar_slot = function(arg1,callback){
+  console.log('buscando usuario');
+  var rescolor='azul'
+  var rslot=0
 
-//fucking callback hell !
-bLogic.prototype.main  = function main () {
-
-
-  if (q_proc.length > 0) {
-    var data = q_proc.shift()
-    hardware_helper.status(base_hardware, hardware_status_cb)
-    console.log('---- procesar ----');
-    var paquete =JSON.parse(data);
-    var usuario = paquete.payload
-    console.log(usuario);
-    if (usuario.bicicletas[0].slot == 0) {  // la bicicleta no esta asignada
-      console.log('bicicleta '+  usuario.bicicletas[0].nombre + ': apagada' );
-
-      // acutalizar el estado en el servidor
-      for(var i in hwr_status.slot ){
-
-        console.log('slot ' + i + ' ' + hwr_status.slot[i].estado);
-        if (hwr_status.slot[i].estado ==='off'){
-          output=i;
-        }
-      }
-      var data = {
-        nombre:'Arduino01',
-        device_address : {
-          msb: 0x41,
-          lsb: 0x42
-        },
-        n_slots: 4
-      }
-
-      data.slot =[ {numero: parseInt(output) +1 ,estado: 'on'} ]
-
-      console.log('-- actualizar slot --');
-      console.log(data);
-      hardware_helper.upload(data,hardware_callback)
-
-    }
-
-  }
-  if (q_hwr_in.length > 0) {
-
-
-  }
-  if (q_hwr_out.length > 0) {
-    // envaimos los comandos
-    var cmd = q_hwr_out.shift()
-    //onsole.log('--- comando -----');
-    //console.log(cmd);
-    hardware.sendData(cmd.device, cmd.operation, cmd.output, cmd.color)
-  }
+  callback(null,rslot,rescolor,arg1)
 
 }
 
+bLogic.prototype.blink = function (slot,color_name,usuario,callback){
+
+  var cmd = {
+    device : {
+      msb : base_hardware.device_address.msb,
+      lsb : base_hardware.device_address.lsb
+    },
+    operation : {
+      type : 0x53,
+      number : 0xAE
+    },
+    output : slot
+  }
+  var color={}
+  switch (color_name) {
+    case 'azul':
+      color.r=0
+      color.g=0
+      color.b=150
+    break;
+    case 'rojo':
+      color.r=150
+      color.g=0
+      color.b=0
+    break;
+    case 'verde':
+      color.r=0
+      color.g=150
+      color.b=0
+    break;
+
+    default:
+    color.r=0
+    color.g=0
+    color.b=0
+  }
+  exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
+  callback(null,slot,usuario)
+}
+
+bLogic.prototype.turnon = function(slot,usuario,callback){
+  var led_NO=0
+  switch (slot+1) {
+    case 1: led_NO=0xA8;
+    break;
+    case 2: led_NO=0xA9;
+    break;
+    case 3: led_NO=0xAA;
+    break;
+    case 4: led_NO=0xAB;
+    break;
+  }
+
+  var cmd = {
+    device : {
+      msb : base_hardware.device_address.msb,
+      lsb : base_hardware.device_address.lsb
+    },
+    operation : {
+      type : 0x53,
+      number : led_NO
+    },
+    output : slot
+  }
+
+var color={r:0,
+    g:0,
+    b:255}
+// prende el rele
+exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
+// prende el neopixel
+color.r=0
+color.g=150
+color.b=0
+cmd.operation.number = 0xAC
+exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
+
+callback(null,slot,usuario)
+}
+
+bLogic.prototype.upload = function(slot,user,callback){
+
+  console.log('subiendo estado');
+  console.log('slot:' + slot);
+  console.log(user);
+  console.log('- uuuuuuu -');
+  callback(null,'subido')
+}
 
 
 function hardware_callback(estado){
@@ -169,6 +213,8 @@ function hardware_callback(estado){
 function readHardwareFromServer(){
   hardware_helper.status(base_hardware, hardware_status_cb)
 }
+
+
 function hardware_status_cb(estado){
 
   hwr_status = estado.payload[0]
@@ -201,13 +247,10 @@ function hardware_status_cb(estado){
   }
   //console.log('----- slot status------');
   for(var i in hwr_status.slot ){
-
-
     if (hwr_status.slot[i].estado ==='on'){
       cmd.color.r =0
       cmd.color.g =150
       cmd.color.b =0
-
     } else {
       cmd.color.r =150
       cmd.color.g =0
@@ -221,3 +264,4 @@ function hardware_status_cb(estado){
     }
   }
 }
+module.exports = bLogic;

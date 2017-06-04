@@ -31,7 +31,7 @@ exports.upload = function(data,callback){
     });
 
   }
-exports.status = function(data,callback){
+exports.status = function(data,user,callback){
       var current = {status:'no ejecutado'}
       //console.log(data)
       request.get(url+'/'+data.nombre,
@@ -48,7 +48,7 @@ exports.status = function(data,callback){
         else {
             current = {status:'no existe el dispositivo', payload: resp.payload}
         }
-        callback(current)
+        callback(current,user)
 
       });
 
