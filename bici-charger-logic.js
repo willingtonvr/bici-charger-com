@@ -10,14 +10,14 @@ var config = require('./config')
 var hwr_status ={}
 var prev_state ={}
 var base_hardware =
-{
-  nombre:'Arduino01',
-  device_address : {
-    msb: 0x41,
-    lsb: 0x42
-  },
-  n_slots: 4
-}
+  {
+    nombre:'Arduino01',
+    device_address : {
+      msb: 0x41,
+      lsb: 0x42
+    },
+    n_slots: 4
+  }
 
 function bLogic() {
   if (! (this instanceof bLogic)) return new bLogic();
@@ -73,7 +73,6 @@ bLogic.prototype.InitZbar = function InitZbar() {
   })
 }
 
-
 bLogic.prototype.InitHardware = function InitHardware(){
   var hardware = require('./hardware-driver/arduino')
   exports.hardware = hardware
@@ -104,7 +103,8 @@ bLogic.prototype.InitHardware = function InitHardware(){
 
   })
 }
-bLogic.prototype.buscar_slot = function(estado,user,callback){
+
+bLogic.prototype.buscar_slot_on = function(estado,user,callback){
   console.log('buscando slot');
   var rescolor='azul'
   var usr =JSON.parse(user)
@@ -131,6 +131,7 @@ bLogic.prototype.buscar_slot = function(estado,user,callback){
   callback(null,rslot,rescolor,usr)
 
 }
+
 bLogic.prototype.buscar_slot_off = function(estado,user,callback){
   console.log('buscando slot de usuario');
   var rescolor='rojo'
@@ -221,25 +222,25 @@ bLogic.prototype.turnon = function(slot,usuario,callback){
     output : slot
   }
 
-var color={r:0,
-    g:0,
-    b:255}
-if (usuario.hwr.slot[0].estado=='off'){
-  color.b = 0
-}
-// prende o apaga el rele
-exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
-// prende el neopixel o apaga
-color.r=0
-color.g=150
-if (usuario.hwr.slot[0].estado=='off'){
-  color.g = 0
-}
-color.b=0
-cmd.operation.number = 0xAC
-exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
-// siguente en la casacada es upload on/off
-callback(null,slot,usuario)
+  var color={r:0,
+      g:0,
+      b:255}
+  if (usuario.hwr.slot[0].estado=='off'){
+      color.b = 0
+  }
+  // prende o apaga el rele
+  exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
+  // prende el neopixel o apaga
+  color.r=0
+  color.g=150
+  if (usuario.hwr.slot[0].estado=='off'){
+    color.g = 0
+  }
+  color.b=0
+  cmd.operation.number = 0xAC
+  exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
+  // siguente en la casacada es upload on/off
+  callback(null,slot,usuario)
 }
 
 bLogic.prototype.upload = function(slot,user,callback){
@@ -270,61 +271,4 @@ bLogic.prototype.upload = function(slot,user,callback){
   })
 }
 
-function hardware_callback(estado){
-  hardware_helper.status(base_hardware, hardware_status_cb)
-}
-function readHardwareFromServer(){
-  hardware_helper.status(base_hardware, hardware_status_cb)
-}
-
-
-function hardware_status_cb(estado){
-
-  hwr_status = estado.payload[0]
-  if (hardware.bootWait) return;
-  if (typeof prev_state.slot =='undefined' ){
-    prev_state.slot = hwr_status.slot
-    for(var i in hwr_status.slot ){
-      if (hwr_status.slot[i].estado ==='on'){
-        prev_state.slot[i].estado ='off'
-      } else {
-        prev_state.slot[i].estado ='on'
-      }
-    }
-  }
-  var cmd = {
-    device : {
-      msb : 0x41,
-      lsb : 0x42
-    },
-    operation : {
-      type : 0x53,
-      number : 0xAC
-    },
-    color : {
-      r : 0,
-      g : 200,
-      b : 0
-    },
-    output : 0
-  }
-  //console.log('----- slot status------');
-  for(var i in hwr_status.slot ){
-    if (hwr_status.slot[i].estado ==='on'){
-      cmd.color.r =0
-      cmd.color.g =150
-      cmd.color.b =0
-    } else {
-      cmd.color.r =150
-      cmd.color.g =0
-      cmd.color.b =0
-    }
-    cmd.output = i
-    if (hwr_status.slot[i].estado != prev_state.slot[i].estado){
-      console.log('slot ' + i + ' SVR: ' + hwr_status.slot[i].estado + ' HWR: ' + prev_state.slot[i].estado)
-      hardware.sendData(cmd.device, cmd.operation, cmd.output, cmd.color)
-      prev_state.slot[i].estado=hwr_status.slot[i].estado
-    }
-  }
-}
 module.exports = bLogic;

@@ -38,7 +38,7 @@ cargador.on('usuario-valido',function(estado) {
 
     async.waterfall([
       async.apply(hardware_helper.status2,dtauser),
-      cargador.buscar_slot,
+      cargador.buscar_slot_on,
       cargador.blink,
       cargador.turnon,
       cargador.upload
@@ -73,8 +73,6 @@ cargador.on('usuario-valido',function(estado) {
     });
 
   }
-  console.log('----------');
-
 
 
 })
