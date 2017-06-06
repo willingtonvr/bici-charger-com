@@ -100,20 +100,57 @@ bLogic.prototype.InitHardware = function InitHardware(){
         break;
         */
       }
-
-    hardware_helper.upload(data,function(status){
-    hardware.parent.emit('hardware-uploaded',status)
-
-    })
+    hardware.parent.emit('hardware-uploaded',data)
 
   })
 }
-bLogic.prototype.buscar_slot = function(arg1,callback){
-  console.log('buscando usuario');
+bLogic.prototype.buscar_slot = function(estado,user,callback){
+  console.log('buscando slot');
   var rescolor='azul'
+  var usr =JSON.parse(user)
   var rslot=0
+  var hwr_status = estado.payload[0]
+  for(var i in hwr_status.slot ){
+         rslot=i
+          if (hwr_status.slot[i].estado ==='off'){
+            break
+          }
+      }
+  console.log('--- slot asignado ---');
+  console.log(rslot);
 
-  callback(null,rslot,rescolor,arg1)
+  usr.bicicletas[0].slot = parseInt(rslot)+1
+  usr.hwr.nombre = hwr_status.nombre
+  usr.hwr.device_address = hwr_status.device_address
+  usr.hwr.n_slots = hwr_status.n_slots
+  usr.hwr.slot = []
+  usr.hwr.slot.push({estado:'on', numero: parseInt(rslot)+1 })
+  //console.log(usr.hwr);
+  //console.log('--- FIN BUSCAR SLOT ---');
+  // siguente en la cascada es blink
+  callback(null,rslot,rescolor,usr)
+
+}
+bLogic.prototype.buscar_slot_off = function(estado,user,callback){
+  console.log('buscando slot de usuario');
+  var rescolor='rojo'
+  var usr =JSON.parse(user)
+
+  var hwr_status = estado.payload[0]
+
+  var rslot=parseInt(usr.bicicletas[0].slot)-1
+  usr.bicicletas[0].slot=0
+  console.log('--- slot desasignado ---');
+  console.log(rslot);
+  usr.hwr.nombre = hwr_status.nombre
+  usr.hwr.device_address = hwr_status.device_address
+  usr.hwr.n_slots = hwr_status.n_slots
+  usr.hwr.slot = []
+  usr.hwr.slot.push({estado:'off', numero: parseInt(rslot)+1 })
+  //console.log(usr.hwr);
+  //console.log('--- FIN BUSCAR SLOT ---');
+  // siguente en la cascada es blink
+  callback(null,rslot,rescolor,usr)
 
 }
 
@@ -154,7 +191,9 @@ bLogic.prototype.blink = function (slot,color_name,usuario,callback){
     color.b=0
   }
   exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
+  // siguente en la cascada es turnon
   callback(null,slot,usuario)
+
 }
 
 bLogic.prototype.turnon = function(slot,usuario,callback){
@@ -185,27 +224,51 @@ bLogic.prototype.turnon = function(slot,usuario,callback){
 var color={r:0,
     g:0,
     b:255}
-// prende el rele
+if (usuario.hwr.slot[0].estado=='off'){
+  color.b = 0
+}
+// prende o apaga el rele
 exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
-// prende el neopixel
+// prende el neopixel o apaga
 color.r=0
 color.g=150
+if (usuario.hwr.slot[0].estado=='off'){
+  color.g = 0
+}
 color.b=0
 cmd.operation.number = 0xAC
 exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
-
+// siguente en la casacada es upload on/off
 callback(null,slot,usuario)
 }
 
 bLogic.prototype.upload = function(slot,user,callback){
+  var hwr = user.hwr
+  var up_usr ={}
 
-  console.log('subiendo estado');
-  console.log('slot:' + slot);
-  console.log(user);
-  console.log('- uuuuuuu -');
-  callback(null,'subido')
+  //user.bicicletas[0].slot = parseInt(slot)+1
+
+  user.bicicletas[0].uses++
+  up_usr.codigo = user.codigo
+  up_usr.nombre = user.nombre
+  up_usr.bicicletas =[]
+  up_usr.bicicletas.push(user.bicicletas[0])
+
+  //console.log('subiendo estado:');
+  //console.log('slot:' + slot);
+  //console.log(hwr);
+
+  hardware_helper.upload(hwr,function(data){
+    console.log('actualizar usuario');
+    console.log(up_usr);
+    user_helper.upload(up_usr, function(estado){
+      console.log(estado);
+      console.log('- uuuuuuu -');
+      callback(null,'subido')
+
+    })
+  })
 }
-
 
 function hardware_callback(estado){
   hardware_helper.status(base_hardware, hardware_status_cb)
