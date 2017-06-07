@@ -199,7 +199,7 @@ bLogic.prototype.blink = function (slot,color_name,usuario,callback){
 
 bLogic.prototype.turnon = function(slot,usuario,callback){
   var led_NO=0
-  switch (slot+1) {
+  switch (parseInt(slot)+1) {
     case 1: led_NO=0xA8;
     break;
     case 2: led_NO=0xA9;
@@ -221,14 +221,19 @@ bLogic.prototype.turnon = function(slot,usuario,callback){
     },
     output : slot
   }
-
+var onoff ='ENCENDER'
   var color={r:0,
       g:0,
       b:255}
   if (usuario.hwr.slot[0].estado=='off'){
       color.b = 0
+      onoff ='APAGAR'
   }
   // prende o apaga el rele
+  console.log('slot :' +  slot);
+  console.log(onoff + ' LED ' + led_NO );
+  console.log(cmd.operation);
+  console.log(color);
   exports.hardware.sendData(cmd.device, cmd.operation, cmd.output, color)
   // prende el neopixel o apaga
   color.r=0
@@ -260,11 +265,11 @@ bLogic.prototype.upload = function(slot,user,callback){
   //console.log(hwr);
 
   hardware_helper.upload(hwr,function(data){
-    console.log('actualizar usuario');
-    console.log(up_usr);
+    //console.log('actualizar usuario');
+    //console.log(up_usr);
     user_helper.upload(up_usr, function(estado){
-      console.log(estado);
-      console.log('- uuuuuuu -');
+      //console.log(estado);
+      //console.log('- uuuuuuu -');
       callback(null,'subido')
 
     })
