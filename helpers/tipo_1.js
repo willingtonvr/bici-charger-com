@@ -1,5 +1,9 @@
 
+
 var request = require('request');
+var config = require('../config')
+var url = config.server+':'+ config.port +'/cargador/tipo'
+
 //var hardware = require('./hardware-driver/arduino')
 
 
@@ -9,12 +13,12 @@ var request = require('request');
             voltaje: 48
             }
 
-
+   console.log(url);          
    console.log(payload)
    console.log('---------------------')
     //var request = require('request');
 
-    request.post('http://localhost:4000/cargador/tipo',
+    request.post(url,
     {
       json:true,
       body:payload

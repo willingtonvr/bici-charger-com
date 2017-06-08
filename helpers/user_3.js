@@ -7,24 +7,23 @@ var request = require('request');
 
             nombre:'Manuela Herrera',
             codigo: 123456789,
-	    bicicletas: []	
+	    bicicletas: []
             }
 
 
-   console.log(payload)
-   console.log('---------------------')
-    //var request = require('request');
+            console.log(payload)
+            console.log('---------------------')
 
-    request.post('http://localhost:4000/cargador/usuario',
-    {
-      json:true,
-      body:payload
-    },
-    function(error, response,body){
-      console.log(body);
-    });
-
-
-
-
- // funciones del hardware
+             //var request = require('request');
+             var request = require('request');
+             var config = require('../config')
+             var url = config.server+':'+ config.port +'/cargador/usuario'
+             request.post(url,
+             {
+               json:true,
+               body:payload
+             },
+             function(error, response,body){
+               console.log(body);
+             });
+          // funciones del hardware

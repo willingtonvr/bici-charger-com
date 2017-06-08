@@ -1,8 +1,4 @@
 
-var request = require('request');
-//var hardware = require('./hardware-driver/arduino')
-
-
     var payload ={
             nombre:'54345',
             Tipo: {nombre:'Alfa'},
@@ -17,8 +13,10 @@ var request = require('request');
    console.log(payload)
    console.log('---------------------')
     //var request = require('request');
-
-    request.post('http://localhost:4000/cargador/bicicleta',
+    var request = require('request');
+    var config = require('../config')
+    var url = config.server+':'+ config.port +'/cargador/bicicleta'
+    request.post(url,
     {
       json:true,
       body:payload
